@@ -1,36 +1,67 @@
-import torch
-from pytorch_mppi import MPPI
+import gymnasium as gym
+import numpy as np
 
-# Definizione del modello dinamico (esempio: pendolo o altro sistema)
-def dynamics(state, control):
-    # Definisci le equazioni di stato per il tuo sistema
-    # state: vettore di stato (posizione, velocità)
-    # control: input di controllo (esempio: coppia o forza)
+class ModifyJointsWrapper(gym.ActionWrapper):
+    def __init__(self, env):
+        super(ModifyJointsWrapper, self).__init__(env)
 
-    # Esempio semplificato: modello dinamico
-    position = state[0]
-    velocity = state[1]
-    
-    # Sistema dinamico (es. equazioni del moto)
-    new_position = position + velocity * 0.01
-    new_velocity = velocity + control[0] * 0.01
-    
-    return torch.stack([new_position, new_velocity])
+    def action(self, action):
+        print(f"Initial action: {action}")  # Debugging statement
+        
+        # If the action space has zero dimensions, return a zero action.
+        if self.action_space.shape[0] == 0:
+            print("Action space is empty. No action will be sent.")
+            return np.zeros(0)  # Returning an empty action to match the expected size
 
-# Parametri del modello
-state_dim = 2  # Dimensione del vettore stato
-control_dim = 1  # Dimensione del vettore di controllo
-horizon = 15  # Orizzonte temporale
-lambda_ = 1.0  # Parametro di costo per l'MPPI
+        # Check if action has the expected size
+        if len(action) < 7:
+            print(f"Action size is less than 7. Adjusting to zeros: {action}")
+            action = np.zeros(7)  # Use zeros if action is not sufficiently sized
+        
+        # Modify specific joints if there are actions to modify
+        action[2] = 0.0  # Freeze the elbow roll
+        action[4] = 0.0  # Freeze the forearm roll
+        action[5] = 0.0  # Freeze the wrist flex
+        action[6] = 0.0  # Freeze the wrist roll
+        
+        return action
 
-# Crea l'oggetto MPPI
-mppi = MPPI(dynamics, state_dim, control_dim, horizon, lambda_)
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        mujoco_env = self.env.unwrapped  # Unwrap to access Mujoco
+        mujoco_env.data.qpos[5] = np.pi / 2  # Set joint positions
+        mujoco_env.data.qpos[6] = np.pi
+        return obs, info
 
-# Stato iniziale del sistema
-state = torch.tensor([0.0, 0.0])
+# Load the environment
+env = gym.make('Pusher-v5', render_mode='human')
 
-# Ciclo di controllo
-for i in range(100):
-    control = mppi.command(state)
-    state = dynamics(state, control)
-    print(f"Stato attuale: {state}, Controllo applicato: {control}")
+# Wrap the environment
+wrapped_env = ModifyJointsWrapper(env)
+
+# Initial reset
+observation, _ = wrapped_env.reset()
+print("Action Space:", wrapped_env.action_space)  # Check action space
+print("Action Space Shape:", wrapped_env.action_space.shape)
+
+# Environment loop
+for _ in range(1000):
+    wrapped_env.render()
+
+    # Handle action based on action space shape
+    if wrapped_env.action_space.shape[0] == 0:
+        action = np.zeros(0)  # Set a default action of zeros (no action)
+    else:
+        action = wrapped_env.action_space.sample()  # Take a random action
+
+    # Step through the environment
+    try:
+        observation, reward, done, truncated, info = wrapped_env.step(action)  # Unpack with truncated
+    except Exception as e:
+        print(f"Error during step: {e}")
+        break  # Exit loop on error
+
+    if done or truncated:
+        wrapped_env.reset()  # Reset if done or truncated
+
+wrapped_env.close()
