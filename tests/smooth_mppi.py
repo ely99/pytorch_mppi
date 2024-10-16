@@ -263,7 +263,7 @@ class Toy2DEnvironment:
 
 
 def make_gif(imgs_dir, gif_name):
-    import imageio
+    import imageio # type: ignore
     images = []
     # human sort
     names = os.listdir(imgs_dir)
