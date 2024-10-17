@@ -1,6 +1,8 @@
 import gymnasium as gym
 import numpy as np
 
+flag_wrapped = 1
+
 class ModifyJointsWrapper(gym.ActionWrapper):
     def __init__(self, env):
         super(ModifyJointsWrapper, self).__init__(env)
@@ -33,11 +35,13 @@ class ModifyJointsWrapper(gym.ActionWrapper):
         mujoco_env.data.qpos[6] = np.pi
         return obs, info
 
-# Load the environment
-env = gym.make('Pusher-v5', render_mode='human')
-
-# Wrap the environment
-wrapped_env = ModifyJointsWrapper(env)
+# Load and Wrap the environment
+if flag_wrapped:
+    env = gym.make('Pusher-v5' ,xml_file="pusher_v5_modified.xml", render_mode='human')
+    wrapped_env = ModifyJointsWrapper(env)
+else:
+    env = gym.make('Pusher-v5', xml_file = "pusher_v5_original.xml", render_mode='human')
+    wrapped_env = env
 
 # Initial reset
 observation, _ = wrapped_env.reset()
