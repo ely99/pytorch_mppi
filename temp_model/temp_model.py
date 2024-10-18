@@ -44,14 +44,23 @@ print(f"High: {wrapped_env.action_space.high}")
 initial_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # Example custom control action
 wrapped_env.step(initial_action)
 
+
+# SYSTEM DYNAMICS ---------------------------------------------------------------------------
+    
+# COST FUNCTION -----------------------------------------------------------------------------
+
+
+
+
 # Environment loop
 for step_num in range(1000):
     wrapped_env.render()
 
 
-    #here i have to put the snext action (in our case it is a prediction) computed by the MPPI
-
-    
+    # here i have to put the snext action (in our case it is a prediction) computed by the MPPI
+    """ mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)"""
 
 
     action = wrapped_env.action_space.sample()  # Take a random action
