@@ -49,7 +49,11 @@ for step_num in range(1000):
     wrapped_env.render()
 
 
-    #here i have to put the
+    #here i have to put the snext action (in our case it is a prediction) computed by the MPPI
+
+    
+
+
     action = wrapped_env.action_space.sample()  # Take a random action
     try:
         observation, reward, done, truncated, info = wrapped_env.step(action)
